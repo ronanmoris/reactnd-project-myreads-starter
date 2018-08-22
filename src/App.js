@@ -2,7 +2,6 @@ import React from "react";
 import Bookshelf from "./Bookshelf";
 import Search from "./Search";
 import { Link, Route } from "react-router-dom";
-
 import * as BooksAPI from "./BooksAPI";
 import "./App.css";
 
@@ -10,22 +9,24 @@ class BooksApp extends React.Component {
   constructor() {
     super();
     this.state = {
-      shelves: {},
-      /**
-       * TODO: Instead of using this state variable to keep track of which page
-       * we're on, use the URL in the browser's address bar. This will ensure that
-       * users can use the browser's back and forward buttons to navigate between
-       * pages, as well as provide a good URL they can bookmark and share.
-       */
-      showSearchPage: false
+      shelves: {}
     };
     this.changeShelf = this.changeShelf.bind(this);
     this.updateBook = this.updateBook.bind(this);
   }
+
   componentDidMount() {
     BooksAPI.getAll().then(books => {
       this.setState({ shelves: this.sortShelves(books) });
     });
+  }
+
+  getAllBooks() {
+    let list = [];
+    Object.keys(this.state.shelves).forEach(shelf => {
+      list = list.concat(this.state.shelves[shelf]);
+    });
+    return list;
   }
 
   sortShelves(books) {
@@ -66,33 +67,42 @@ class BooksApp extends React.Component {
     if (!shelves[shelfToGo]) {
       shelves[shelfToGo] = [];
     }
-
     shelves[shelfToGo].push(book.props);
     this.setState({ shelves: shelves });
   }
 
-  changeShelf(book, e) {
-    const index = this.findBookIndex(book);
-    this.removeBookFromShelf(book, index);
-    this.addBookToShelf(book, e);
+  changeShelf(book, shelfToGo) {
+    const copy = {};
+    Object.assign(copy, book);
+    if (book.props.shelf != "none") {
+      const index = this.findBookIndex(book);
+      this.removeBookFromShelf(book, index);
+    }
+    copy.shelf = shelfToGo;
+    this.addBookToShelf(copy, shelfToGo);
   }
 
   updateBook(book, e) {
-    console.log("comeco update this.state.shelves", this.state.shelves);
     let shelf = e.target.value;
     BooksAPI.update(book.props, e.target.value).then(result => {
-      console.log("result", result);
-      console.log("book", book);
-      console.log("shelf", shelf);
-
-      this.changeShelf(book, shelf);
+      BooksAPI.getAll().then(books => {
+        this.setState({ shelves: this.sortShelves(books) });
+      });
     });
   }
 
   render() {
     return (
       <div className="app">
-        <Route path="/search" component={Search} />
+        <Route
+          path="/search"
+          render={() => (
+            <Search
+              allBooks={this.getAllBooks()}
+              bookChangedShelf={this.updateBook}
+            />
+          )}
+        />
         <Route
           exact
           path="/"
