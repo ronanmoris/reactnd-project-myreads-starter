@@ -14,10 +14,11 @@ export default class Bookshelf extends React.Component {
                 <li key={index}>
                   <Book
                     shelfChanged={this.props.bookChangedShelf}
-                    imageUrl={book.imageLinks.thumbnail}
+                    imageLinks={book.imageLinks}
                     shelf={book.shelf}
                     title={book.title}
                     authors={book.authors}
+                    id={book.id}
                   />
                 </li>
               );

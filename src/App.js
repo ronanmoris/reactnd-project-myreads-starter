@@ -1,8 +1,10 @@
 import React from "react";
+import Bookshelf from "./Bookshelf";
+import Search from "./Search";
+import { Link, Route } from "react-router-dom";
+
 import * as BooksAPI from "./BooksAPI";
 import "./App.css";
-import Book from "./Book.js";
-import Bookshelf from "./Bookshelf";
 
 class BooksApp extends React.Component {
   constructor() {
@@ -17,8 +19,9 @@ class BooksApp extends React.Component {
        */
       showSearchPage: false
     };
+    this.changeShelf = this.changeShelf.bind(this);
+    this.updateBook = this.updateBook.bind(this);
   }
-
   componentDidMount() {
     BooksAPI.getAll().then(books => {
       this.setState({ shelves: this.sortShelves(books) });
@@ -41,67 +44,84 @@ class BooksApp extends React.Component {
     return shelves;
   }
 
-  changeShelf(e) {
-    console.log("chegouuuu ", e);
+  findBookIndex(book) {
+    const shelves = this.state.shelves;
+    const shelf = shelves[book.props.shelf];
+    return shelf.findIndex(b => book.props.id === b.id);
   }
+
+  removeBookFromShelf(book, index) {
+    if (index !== -1) {
+      const shelves = this.state.shelves;
+      const shelf = shelves[book.props.shelf];
+
+      shelf.splice(index, 1);
+      shelves[book.props.shelf] = shelf;
+      this.setState({ shelves: shelves });
+    }
+  }
+
+  addBookToShelf(book, shelfToGo) {
+    const shelves = this.state.shelves;
+    if (!shelves[shelfToGo]) {
+      shelves[shelfToGo] = [];
+    }
+
+    shelves[shelfToGo].push(book.props);
+    this.setState({ shelves: shelves });
+  }
+
+  changeShelf(book, e) {
+    const index = this.findBookIndex(book);
+    this.removeBookFromShelf(book, index);
+    this.addBookToShelf(book, e);
+  }
+
+  updateBook(book, e) {
+    console.log("comeco update this.state.shelves", this.state.shelves);
+    let shelf = e.target.value;
+    BooksAPI.update(book.props, e.target.value).then(result => {
+      console.log("result", result);
+      console.log("book", book);
+      console.log("shelf", shelf);
+
+      this.changeShelf(book, shelf);
+    });
+  }
+
   render() {
     return (
       <div className="app">
-        {this.state.showSearchPage ? (
-          <div className="search-books">
-            <div className="search-books-bar">
-              <a
-                className="close-search"
-                onClick={() => this.setState({ showSearchPage: false })}
-              >
-                Close
-              </a>
-              <div className="search-books-input-wrapper">
-                {/*
-                  NOTES: The search from BooksAPI is limited to a particular set of search terms.
-                  You can find these search terms here:
-                  https://github.com/udacity/reactnd-project-myreads-starter/blob/master/SEARCH_TERMS.md
-
-                  However, remember that the BooksAPI.search method DOES search by title or author. So, don't worry if
-                  you don't find a specific author or title. Every search is limited by search terms.
-                */}
-                <input type="text" placeholder="Search by title or author" />
+        <Route path="/search" component={Search} />
+        <Route
+          exact
+          path="/"
+          render={() => (
+            <div className="list-books">
+              <div className="list-books-title">
+                <h1>MyReads</h1>
+              </div>
+              <div className="list-books-content">
+                <div>
+                  {Object.keys(this.state.shelves).map((key, index) => {
+                    const booksOnThisShelf = this.state.shelves[key];
+                    return (
+                      <Bookshelf
+                        bookChangedShelf={this.updateBook}
+                        key={index}
+                        books={booksOnThisShelf}
+                        title={key}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+              <div className="open-search">
+                <Link to="/search">Add a book</Link>
               </div>
             </div>
-            <div className="search-books-results">
-              <ol className="books-grid" />
-            </div>
-          </div>
-        ) : this.state.shelves ? (
-          <div className="list-books">
-            <div className="list-books-title">
-              <h1>MyReads</h1>
-            </div>
-            <div className="list-books-content">
-              <div>
-                {Object.keys(this.state.shelves).map((key, index) => {
-                  const booksOnThisShelf = this.state.shelves[key];
-                  console.log(booksOnThisShelf);
-                  return (
-                    <Bookshelf
-                      bookChangedShelf={this.changeShelf}
-                      key={index}
-                      books={booksOnThisShelf}
-                      title={key}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-            <div className="open-search">
-              <a onClick={() => this.setState({ showSearchPage: true })}>
-                Add a book
-              </a>
-            </div>
-          </div>
-        ) : (
-          <span>Loading</span>
-        )}
+          )}
+        />
       </div>
     );
   }

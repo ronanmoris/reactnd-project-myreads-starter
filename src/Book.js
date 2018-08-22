@@ -1,12 +1,7 @@
 import React from "react";
 import "./App.css";
 
-export default class Book extends React.Component {
-  shelfChanged(e) {
-    e.taget.book = this;
-    this.props.selfChanged = e;
-  }
-
+class Book extends React.Component {
   render() {
     return (
       <div className="book">
@@ -16,11 +11,14 @@ export default class Book extends React.Component {
             style={{
               width: 128,
               height: 193,
-              backgroundImage: "url(" + this.props.imageUrl + ")"
+              backgroundImage: "url(" + this.props.imageLinks.thumbnail + ")"
             }}
           />
           <div className="book-shelf-changer">
-            <select onChange={this.shelfChanged} value={this.props.shelf}>
+            <select
+              onChange={this.props.shelfChanged.bind(null, this)}
+              value={this.props.shelf}
+            >
               <option value="move" disabled>
                 Move to...
               </option>
@@ -37,3 +35,5 @@ export default class Book extends React.Component {
     );
   }
 }
+
+export default Book;
